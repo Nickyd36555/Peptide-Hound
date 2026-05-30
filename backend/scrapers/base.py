@@ -90,3 +90,51 @@ class BaseScraper(ABC):
             weight_mg=weight_mg,
             price_per_mg=round(price / weight_mg, 4),
         )
+
+
+class WooCommerceScraper(BaseScraper):
+    """Shared scrape() logic for WooCommerce product grids.
+
+    Subclasses set SHOP_PAGES (list of paginated URLs to try) and
+    BASE_URL (fallback for products with no href).
+    """
+
+    SHOP_PAGES: List[str] = []
+    BASE_URL: str = ""
+
+    async def scrape(self) -> List[ProductData]:
+        products: List[ProductData] = []
+        for page_url in self.SHOP_PAGES:
+            soup = await self.fetch_html(page_url)
+            if soup is None:
+                continue
+            items = soup.select(
+                "ul.products li.product, .products .type-product, "
+                ".woocommerce-loop-product, .product-item"
+            )
+            if not items:
+                break
+            for item in items:
+                try:
+                    name_el = item.select_one(
+                        ".woocommerce-loop-product__title, "
+                        "h2.woocommerce-loop-product__title, h2, h3"
+                    )
+                    # Pick the last price element — on sale items it's the sale price
+                    price_els = item.select(
+                        ".woocommerce-Price-amount bdi, .woocommerce-Price-amount"
+                    )
+                    link_el = item.select_one("a[href]")
+                    if not name_el or not price_els:
+                        continue
+                    name = name_el.get_text(strip=True)
+                    price = self.parse_price(price_els[-1].get_text(strip=True))
+                    href = link_el.get("href", self.BASE_URL) if link_el else self.BASE_URL
+                    weight_mg = self.parse_weight_mg(name)
+                    if price and weight_mg:
+                        p = self.build_product(name, price, href, weight_mg)
+                        if p:
+                            products.append(p)
+                except Exception:
+                    continue
+        return products
