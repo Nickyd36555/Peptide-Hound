@@ -19,7 +19,9 @@ from .scrapers.axiom_peptides import AxiomPeptidesScraper
 from .scrapers.behemoth_labz import BehemothLabzScraper
 from .scrapers.biotech_peptides import BiotechPeptidesScraper
 from .scrapers.blue_sky_peptide import BlueSkyPeptideScraper
+from .scrapers.coastal_peptides import CoastalPeptidesScraper
 from .scrapers.core_peptides import CorePeptidesScraper
+from .scrapers.eternal_peptides import EternalPeptidesScraper
 from .scrapers.evolved_peptides import EvolvedPeptidesScraper
 from .scrapers.geo_peptides import GeoPeptidesScraper
 from .scrapers.iron_daddy import IronDaddyScraper
@@ -27,12 +29,16 @@ from .scrapers.limitless_life import LimitlessLifeScraper
 from .scrapers.maxim_peptide import MaximPeptideScraper
 from .scrapers.nootropic_source import NootropicSourceScraper
 from .scrapers.paradigm_peptides import ParadigmPeptidesScraper
+from .scrapers.paramount_peptides import ParamountPeptidesScraper
+from .scrapers.peptide_crafters import PeptideCraftersScraper
 from .scrapers.peptide_pro import PeptideProScraper
 from .scrapers.peptide_sciences import PeptideSciencesScraper
 from .scrapers.peptide_warehouse import PeptideWarehouseScraper
+from .scrapers.polaris_peptides import PolarispeptidesScraper
 from .scrapers.pure_rawz import PureRawzScraper
 from .scrapers.swiss_chems import SwissChemsScraper
 from .scrapers.us_peptides import USPeptidesScraper
+from .scrapers.verified_peptides import VerifiedPeptidesScraper
 
 logger = logging.getLogger(__name__)
 
@@ -56,6 +62,12 @@ SCRAPER_CLASSES = [
     NootropicSourceScraper,
     USPeptidesScraper,
     IronDaddyScraper,
+    PolarispeptidesScraper,
+    VerifiedPeptidesScraper,
+    PeptideCraftersScraper,
+    EternalPeptidesScraper,
+    CoastalPeptidesScraper,
+    ParamountPeptidesScraper,
 ]
 
 FRONTEND_DIR = Path(__file__).parent.parent / "frontend"
@@ -200,10 +212,41 @@ _SAMPLE: list[dict] = [
     {"vendor": "US Peptides",       "name": "Ipamorelin 2mg",   "price": 17.99, "url": "https://uspeptides.com/ipamorelin",              "weight_mg": 2.0},
     {"vendor": "US Peptides",       "name": "CJC-1295 DAC 2mg", "price": 25.99, "url": "https://uspeptides.com/cjc-1295",               "weight_mg": 2.0},
     # Iron Daddy
-    {"vendor": "Iron Daddy",        "name": "BPC-157 5mg",      "price": 35.99, "url": "https://www.irondaddy.to/products/bpc-157",      "weight_mg": 5.0},
-    {"vendor": "Iron Daddy",        "name": "TB-500 5mg",       "price": 44.99, "url": "https://www.irondaddy.to/products/tb-500",       "weight_mg": 5.0},
-    {"vendor": "Iron Daddy",        "name": "Semaglutide 5mg",  "price": 84.99, "url": "https://www.irondaddy.to/products/semaglutide",  "weight_mg": 5.0},
-    {"vendor": "Iron Daddy",        "name": "Tirzepatide 5mg",  "price": 99.99, "url": "https://www.irondaddy.to/products/tirzepatide",  "weight_mg": 5.0},
+    {"vendor": "Iron Daddy",        "name": "BPC-157 5mg",      "price": 35.99, "url": "https://www.irondaddy.to/products/bpc-157",             "weight_mg": 5.0},
+    {"vendor": "Iron Daddy",        "name": "TB-500 5mg",       "price": 44.99, "url": "https://www.irondaddy.to/products/tb-500",              "weight_mg": 5.0},
+    {"vendor": "Iron Daddy",        "name": "Semaglutide 5mg",  "price": 84.99, "url": "https://www.irondaddy.to/products/semaglutide",         "weight_mg": 5.0},
+    {"vendor": "Iron Daddy",        "name": "Tirzepatide 5mg",  "price": 99.99, "url": "https://www.irondaddy.to/products/tirzepatide",         "weight_mg": 5.0},
+    # ── Finnrick-sourced vendors ────────────────────────────────────────────
+    # Polaris Peptides
+    {"vendor": "Polaris Peptides",  "name": "BPC-157 5mg",      "price": 38.00, "url": "https://polarispeptides.com/product/bpc-157-5mg/",      "weight_mg": 5.0},
+    {"vendor": "Polaris Peptides",  "name": "TB-500 5mg",       "price": 46.00, "url": "https://polarispeptides.com/product/tb-500-5mg/",       "weight_mg": 5.0},
+    {"vendor": "Polaris Peptides",  "name": "CJC-1295 DAC 2mg", "price": 24.00, "url": "https://polarispeptides.com/product/cjc-1295-dac/",     "weight_mg": 2.0},
+    {"vendor": "Polaris Peptides",  "name": "Ipamorelin 2mg",   "price": 17.00, "url": "https://polarispeptides.com/product/ipamorelin/",       "weight_mg": 2.0},
+    {"vendor": "Polaris Peptides",  "name": "Semaglutide 5mg",  "price": 86.00, "url": "https://polarispeptides.com/product/semaglutide/",      "weight_mg": 5.0},
+    # Verified Peptides
+    {"vendor": "Verified Peptides", "name": "BPC-157 5mg",      "price": 41.00, "url": "https://verifiedpeptides.com/product/bpc157/",          "weight_mg": 5.0},
+    {"vendor": "Verified Peptides", "name": "TB-500 5mg",       "price": 49.00, "url": "https://verifiedpeptides.com/product/tb-500/",          "weight_mg": 5.0},
+    {"vendor": "Verified Peptides", "name": "PT-141 10mg",      "price": 34.00, "url": "https://verifiedpeptides.com/product/pt-141/",          "weight_mg": 10.0},
+    {"vendor": "Verified Peptides", "name": "GHK-Cu 50mg",      "price": 38.00, "url": "https://verifiedpeptides.com/product/ghkcu/",           "weight_mg": 50.0},
+    # Peptide Crafters
+    {"vendor": "Peptide Crafters",  "name": "BPC-157 5mg",      "price": 43.00, "url": "https://peptidecrafters.com/shop/bpc-157/",             "weight_mg": 5.0},
+    {"vendor": "Peptide Crafters",  "name": "TB-500 5mg",       "price": 52.00, "url": "https://peptidecrafters.com/shop/tb-500/",              "weight_mg": 5.0},
+    {"vendor": "Peptide Crafters",  "name": "Sermorelin 2mg",   "price": 24.00, "url": "https://peptidecrafters.com/shop/sermorelin/",          "weight_mg": 2.0},
+    # Eternal Peptides
+    {"vendor": "Eternal Peptides",  "name": "BPC-157 5mg",      "price": 40.00, "url": "https://eternalpeptides.com/product/bpc-157/",          "weight_mg": 5.0},
+    {"vendor": "Eternal Peptides",  "name": "TB-500 5mg",       "price": 48.00, "url": "https://eternalpeptides.com/product/tb-500/",           "weight_mg": 5.0},
+    {"vendor": "Eternal Peptides",  "name": "Ipamorelin 2mg",   "price": 18.00, "url": "https://eternalpeptides.com/product/ipamorelin/",       "weight_mg": 2.0},
+    {"vendor": "Eternal Peptides",  "name": "Semaglutide 5mg",  "price": 91.00, "url": "https://eternalpeptides.com/product/semaglutide/",      "weight_mg": 5.0},
+    # Coastal Peptides
+    {"vendor": "Coastal Peptides",  "name": "BPC-157 5mg",      "price": 44.00, "url": "https://coastalpeptides.com/product/bpc-157/",          "weight_mg": 5.0},
+    {"vendor": "Coastal Peptides",  "name": "TB-500 5mg",       "price": 53.00, "url": "https://coastalpeptides.com/product/tb-500/",           "weight_mg": 5.0},
+    {"vendor": "Coastal Peptides",  "name": "CJC-1295 DAC 2mg", "price": 27.00, "url": "https://coastalpeptides.com/product/cjc-1295/",         "weight_mg": 2.0},
+    {"vendor": "Coastal Peptides",  "name": "GHRP-2 5mg",       "price": 18.00, "url": "https://coastalpeptides.com/product/ghrp-2/",           "weight_mg": 5.0},
+    # Paramount Peptides
+    {"vendor": "Paramount Peptides","name": "BPC-157 5mg",      "price": 42.00, "url": "https://paramountpeptides.com/product/bpc-157/",        "weight_mg": 5.0},
+    {"vendor": "Paramount Peptides","name": "TB-500 5mg",       "price": 50.00, "url": "https://paramountpeptides.com/product/tb-500/",         "weight_mg": 5.0},
+    {"vendor": "Paramount Peptides","name": "PT-141 10mg",      "price": 35.00, "url": "https://paramountpeptides.com/product/pt-141/",         "weight_mg": 10.0},
+    {"vendor": "Paramount Peptides","name": "Sermorelin 2mg",   "price": 23.00, "url": "https://paramountpeptides.com/product/sermorelin/",     "weight_mg": 2.0},
 ]
 
 
