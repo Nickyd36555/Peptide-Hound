@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Peptide Hound — Peptide Price Comparison</title>
+  <link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+  <header>
+    <div class="brand">
+      <svg class="logo-icon" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <!-- Simple hound silhouette -->
+        <ellipse cx="20" cy="40" rx="14" ry="10" fill="currentColor" opacity=".9"/>
+        <circle cx="46" cy="22" r="12" fill="currentColor" opacity=".9"/>
+        <rect x="30" y="28" width="10" height="8" rx="2" fill="currentColor" opacity=".9"/>
+        <ellipse cx="34" cy="50" rx="5" ry="3" fill="currentColor" opacity=".7"/>
+        <!-- ear -->
+        <ellipse cx="52" cy="12" rx="5" ry="8" fill="currentColor" opacity=".7" transform="rotate(20 52 12)"/>
+        <!-- nose -->
+        <circle cx="57" cy="25" r="2.5" fill="var(--accent)"/>
+        <!-- eye -->
+        <circle cx="50" cy="18" r="2" fill="var(--bg)"/>
+        <!-- tail -->
+        <path d="M6 34 Q0 20 8 16" stroke="currentColor" stroke-width="3" stroke-linecap="round" fill="none" opacity=".7"/>
+      </svg>
+      <div class="brand-text">
+        <h1>Peptide Hound</h1>
+        <p class="tagline">Hunt down the best peptide prices</p>
+      </div>
+    </div>
+    <div class="toolbar">
+      <div class="search-wrap">
+        <svg class="search-icon" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <circle cx="9" cy="9" r="6" stroke="currentColor" stroke-width="2"/>
+          <line x1="13.5" y1="13.5" x2="18" y2="18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+        </svg>
+        <input id="search" type="search" placeholder="Search peptides…" autocomplete="off" />
+      </div>
+      <button id="refresh-btn" class="btn-primary">
+        <svg viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" width="16" height="16">
+          <path d="M4 10a6 6 0 1 1 1.5 4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+          <polyline points="1,10 4,13 7,10" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
+        </svg>
+        Refresh Prices
+      </button>
+    </div>
+  </header>
+
+  <main>
+    <div id="status-bar" class="status-bar hidden"></div>
+
+    <div class="table-wrap">
+      <table id="products-table">
+        <thead>
+          <tr>
+            <th data-sort="normalized_name" class="sorted-asc">Peptide <span class="sort-arrow">↑</span></th>
+            <th data-sort="cheapest_price_per_mg">$/mg <span class="sort-arrow"></span></th>
+            <th data-sort="cheapest_price">Best Price <span class="sort-arrow"></span></th>
+            <th data-sort="cheapest_vendor">Vendor <span class="sort-arrow"></span></th>
+            <th data-sort="vendor_count"># Vendors <span class="sort-arrow"></span></th>
+            <th class="col-action"></th>
+          </tr>
+        </thead>
+        <tbody id="products-body">
+          <tr><td colspan="6" class="state-cell loading">Loading…</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p class="disclaimer">
+      Prices are scraped periodically and may not reflect real-time availability.
+      All products listed are for research purposes only.
+    </p>
+  </main>
+
+  <script src="/app.js"></script>
+</body>
+</html>
