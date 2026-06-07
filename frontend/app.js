@@ -135,13 +135,16 @@ async function refreshPrices() {
 
     const vendorSummary = data.vendors.map(v => `${v.vendor} (${v.count})`).join(', ');
     const errNote = data.errors.length
-      ? ` — ${data.errors.length} vendor(s) failed: ${data.errors.map(e => e.split(':')[0]).join(', ')}`
+      ? ` — ${data.errors.length} failed: ${data.errors.map(e => e.split(':')[0]).join(', ')}`
+      : '';
+    const skipNote = data.skipped_no_creds && data.skipped_no_creds.length
+      ? ` — ${data.skipped_no_creds.length} skipped (no credentials): ${data.skipped_no_creds.join(', ')}`
       : '';
 
     showStatus(
       data.errors.length && data.scraped === 0 ? 'error' : 'success',
       `Scraped ${data.scraped} products from ${data.vendors.length} vendor(s).` +
-      (vendorSummary ? ` ${vendorSummary}.` : '') + errNote
+      (vendorSummary ? ` ${vendorSummary}.` : '') + errNote + skipNote
     );
     await loadProducts();
   } catch (err) {

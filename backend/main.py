@@ -15,6 +15,10 @@ from sqlalchemy import delete
 from .database import Product, create_tables, get_session
 from .normalizer import normalize_name
 from .scrapers.amino_asylum import AminoAsylumScraper
+from .scrapers.liberty_peptides import LibertyPeptidesScraper
+from .scrapers.loti_labs import LotiLabsScraper
+from .scrapers.nulife_peptides import NuLifePeptidesScraper
+from .scrapers.prime_peptides import PrimePeptidesScraper
 from .scrapers.axiom_peptides import AxiomPeptidesScraper
 from .scrapers.behemoth_labz import BehemothLabzScraper
 from .scrapers.biotech_peptides import BiotechPeptidesScraper
@@ -68,6 +72,11 @@ SCRAPER_CLASSES = [
     EternalPeptidesScraper,
     CoastalPeptidesScraper,
     ParamountPeptidesScraper,
+    # Login-gated — active only when env vars are set
+    NuLifePeptidesScraper,
+    LibertyPeptidesScraper,
+    PrimePeptidesScraper,
+    LotiLabsScraper,
 ]
 
 FRONTEND_DIR = Path(__file__).parent.parent / "frontend"
@@ -247,6 +256,22 @@ _SAMPLE: list[dict] = [
     {"vendor": "Paramount Peptides","name": "TB-500 5mg",       "price": 50.00, "url": "https://paramountpeptides.com/product/tb-500/",         "weight_mg": 5.0},
     {"vendor": "Paramount Peptides","name": "PT-141 10mg",      "price": 35.00, "url": "https://paramountpeptides.com/product/pt-141/",         "weight_mg": 10.0},
     {"vendor": "Paramount Peptides","name": "Sermorelin 2mg",   "price": 23.00, "url": "https://paramountpeptides.com/product/sermorelin/",     "weight_mg": 2.0},
+    # ── Login-gated vendors (live data requires env vars) ──────────────────
+    # NuLife Peptides
+    {"vendor": "NuLife Peptides",   "name": "BPC-157 10mg",     "price": 59.99, "url": "https://nulifepeptides.com/product/bpc-157-10mg/",      "weight_mg": 10.0},
+    {"vendor": "NuLife Peptides",   "name": "CJC-1295 DAC 5mg", "price": 49.99, "url": "https://nulifepeptides.com/product/cjc-1295-with-dac/", "weight_mg": 5.0},
+    {"vendor": "NuLife Peptides",   "name": "Tesamorelin 2mg",  "price": 34.99, "url": "https://nulifepeptides.com/product/tesamorelin/",       "weight_mg": 2.0},
+    # Liberty Peptides
+    {"vendor": "Liberty Peptides",  "name": "BPC-157 5mg",      "price": 43.99, "url": "https://libertypeptides.com/product/bpc-157/",          "weight_mg": 5.0},
+    {"vendor": "Liberty Peptides",  "name": "TB-500 5mg",       "price": 52.99, "url": "https://libertypeptides.com/product/tb-500/",           "weight_mg": 5.0},
+    {"vendor": "Liberty Peptides",  "name": "Semaglutide 5mg",  "price": 93.99, "url": "https://libertypeptides.com/product/semaglutide/",      "weight_mg": 5.0},
+    # Prime Peptides
+    {"vendor": "Prime Peptides",    "name": "BPC-157 5mg",      "price": 40.99, "url": "https://primepeptides.com/product/bpc-157/",            "weight_mg": 5.0},
+    {"vendor": "Prime Peptides",    "name": "TB-500 5mg",       "price": 49.99, "url": "https://primepeptides.com/product/tb-500/",             "weight_mg": 5.0},
+    # Loti Labs
+    {"vendor": "Loti Labs",         "name": "BPC-157 5mg",      "price": 45.00, "url": "https://lotilabs.com/product/bpc-157/",                 "weight_mg": 5.0},
+    {"vendor": "Loti Labs",         "name": "TB-500 5mg",       "price": 54.00, "url": "https://lotilabs.com/product/tb-500/",                  "weight_mg": 5.0},
+    {"vendor": "Loti Labs",         "name": "Ipamorelin 2mg",   "price": 22.00, "url": "https://lotilabs.com/product/ipamorelin/",              "weight_mg": 2.0},
 ]
 
 
@@ -327,6 +352,7 @@ class ScrapeResult(BaseModel):
     scraped: int
     vendors: List[dict]
     errors: List[str]
+    skipped_no_creds: List[str]
 
 
 # ---------------------------------------------------------------------------
@@ -426,7 +452,9 @@ async def scrape_all():
 # ---------------------------------------------------------------------------
 
 async def _run_scrapers() -> dict:
-    result: dict = {"scraped": 0, "vendors": [], "errors": []}
+    from .scrapers.base import LoginScraper
+
+    result: dict = {"scraped": 0, "vendors": [], "errors": [], "skipped_no_creds": []}
 
     async with httpx.AsyncClient() as client:
         instances = [cls(client) for cls in SCRAPER_CLASSES]
@@ -437,6 +465,16 @@ async def _run_scrapers() -> dict:
     session = get_session()
     try:
         for scraper, outcome in zip(instances, outcomes):
+            # Detect login scrapers that were skipped due to missing credentials
+            if (
+                isinstance(scraper, LoginScraper)
+                and isinstance(outcome, list)
+                and len(outcome) == 0
+                and scraper._creds() is None
+            ):
+                result["skipped_no_creds"].append(scraper.vendor_name)
+                continue
+
             if isinstance(outcome, Exception):
                 result["errors"].append(f"{scraper.vendor_name}: {outcome}")
                 continue

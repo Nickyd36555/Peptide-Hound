@@ -92,6 +92,137 @@ class BaseScraper(ABC):
         )
 
 
+class LoginScraper(BaseScraper):
+    """Base for sites that require a session login before scraping.
+
+    Credentials are read from environment variables — NEVER hardcoded.
+    Set CREDENTIALS_ENV on each subclass:
+
+        CREDENTIALS_ENV = {"email": "MYSITE_EMAIL", "password": "MYSITE_PASSWORD"}
+
+    Then export those vars before starting the server:
+
+        export MYSITE_EMAIL="you@example.com"
+        export MYSITE_PASSWORD="yourpassword"
+        uvicorn backend.main:app
+
+    If the env vars are absent the scraper silently returns [].
+    """
+
+    CREDENTIALS_ENV: dict[str, str] = {}
+
+    def _creds(self) -> Optional[tuple[str, str]]:
+        """Return (email, password) from env vars, or None if not set."""
+        import os
+        email = os.getenv(self.CREDENTIALS_ENV.get("email", ""), "")
+        password = os.getenv(self.CREDENTIALS_ENV.get("password", ""), "")
+        return (email, password) if email and password else None
+
+    async def login(self, email: str, password: str) -> bool:
+        """Perform the site login. Return True on success."""
+        raise NotImplementedError
+
+    async def scrape(self) -> List[ProductData]:
+        creds = self._creds()
+        if not creds:
+            return []
+        ok = await self.login(*creds)
+        if not ok:
+            return []
+        return await self.scrape_authenticated()
+
+    async def scrape_authenticated(self) -> List[ProductData]:
+        """Scrape after a successful login. Subclasses implement this."""
+        raise NotImplementedError
+
+
+class WooCommerceLoginScraper(LoginScraper):
+    """LoginScraper for standard WooCommerce sites.
+
+    Login flow:
+      1. GET /my-account/ — extract woocommerce-login-nonce hidden field
+      2. POST /my-account/ with email + password + nonce
+      3. Verify redirect landed on the account dashboard (not back on login)
+      4. Scrape SHOP_PAGES with the authenticated session cookie
+    """
+
+    LOGIN_URL: str = ""   # e.g. "https://example.com/my-account/"
+    SHOP_PAGES: List[str] = []
+    BASE_URL: str = ""
+
+    async def login(self, email: str, password: str) -> bool:
+        # Step 1: fetch login page and extract nonce
+        soup = await self.fetch_html(self.LOGIN_URL)
+        if not soup:
+            return False
+
+        nonce_input = soup.find("input", {"name": "woocommerce-login-nonce"})
+        nonce = nonce_input["value"] if nonce_input else ""
+
+        referer_input = soup.find("input", {"name": "_wp_http_referer"})
+        referer = referer_input["value"] if referer_input else "/my-account/"
+
+        # Step 2: POST credentials
+        try:
+            resp = await self.client.post(
+                self.LOGIN_URL,
+                data={
+                    "username": email,
+                    "password": password,
+                    "login": "Sign in",
+                    "woocommerce-login-nonce": nonce,
+                    "_wp_http_referer": referer,
+                },
+                headers={**REQUEST_HEADERS, "Referer": self.LOGIN_URL},
+                timeout=30.0,
+                follow_redirects=True,
+            )
+        except Exception:
+            return False
+
+        # Step 3: success = we're no longer on the login page
+        # WooCommerce redirects to /my-account/ dashboard on success;
+        # on failure it re-renders the login form with an error notice.
+        return "woocommerce-error" not in resp.text and "woocommerce-login-nonce" not in resp.text
+
+    async def scrape_authenticated(self) -> List[ProductData]:
+        """Same WooCommerce product grid parsing as WooCommerceScraper."""
+        products: List[ProductData] = []
+        for page_url in self.SHOP_PAGES:
+            soup = await self.fetch_html(page_url)
+            if soup is None:
+                continue
+            items = soup.select(
+                "ul.products li.product, .products .type-product, "
+                ".woocommerce-loop-product, .product-item"
+            )
+            if not items:
+                break
+            for item in items:
+                try:
+                    name_el = item.select_one(
+                        ".woocommerce-loop-product__title, "
+                        "h2.woocommerce-loop-product__title, h2, h3"
+                    )
+                    price_els = item.select(
+                        ".woocommerce-Price-amount bdi, .woocommerce-Price-amount"
+                    )
+                    link_el = item.select_one("a[href]")
+                    if not name_el or not price_els:
+                        continue
+                    name = name_el.get_text(strip=True)
+                    price = self.parse_price(price_els[-1].get_text(strip=True))
+                    href = link_el.get("href", self.BASE_URL) if link_el else self.BASE_URL
+                    weight_mg = self.parse_weight_mg(name)
+                    if price and weight_mg:
+                        p = self.build_product(name, price, href, weight_mg)
+                        if p:
+                            products.append(p)
+                except Exception:
+                    continue
+        return products
+
+
 class WooCommerceScraper(BaseScraper):
     """Shared scrape() logic for WooCommerce product grids.
 
